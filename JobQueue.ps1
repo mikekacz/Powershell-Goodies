@@ -18,6 +18,7 @@ function Start-JobQueue
     foreach ($comp in $computername)
     {
         #add job tu Queue
+        $scriptBlockParameter[0] = $comp
         Start-Job -ScriptBlock $scriptBlock -Name $comp -ArgumentList $scriptBlockParameter
         
     }
@@ -28,14 +29,14 @@ function Start-JobQueue
 #example scriptBlockParameter and scriptBlock
 $scriptBlockParameter = 
 @(
-    $null,  #for computername parameter - populated during
+    $null,  #for computername parameter - populated while adding Job
     15, #for count parameter
     64 #for size parameter
 )
 $scriptBlock =
 {
     Param ($computername, $count , $size)
-    test-connection -ComputerName $computername -Count $count -BufferSize $size | Write-Output
+    test-connection -ComputerName $computername -Count $count -BufferSize $size | Write-Output 
 }
 
-
+$computername =  @('10.12.10.10', '10.12.10.2', '10.12.10.6', '10.12.10.13')
