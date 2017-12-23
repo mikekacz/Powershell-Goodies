@@ -13,16 +13,24 @@ function Start-JobQueue
     #clean jobs
     Get-Job | Remove-Job -Force  
 
-    $i = 0 #counter for write-progress
+    $i = 0 #Job index
 
-    foreach ($comp in $computername)
-    {
-        #add job tu Queue
-        $scriptBlockParameter[0] = $comp
-        Start-Job -ScriptBlock $scriptBlock -Name $comp -ArgumentList $scriptBlockParameter
-        
+    while (@(get-job).count -lt $computername.Count -or @(get-job -HasMoreData $true).Count -ne 0) {
+        $jobs = @(get-job)
+        if (@($jobs | Where-Object state -eq 'Running').count -lt $MaxThreads -and $i -lt $computername.Count)
+        {
+            #add next job
+            $scriptBlockParameter[0] = $computername[$i]
+            Start-Job -ScriptBlock $scriptBlock -Name $computername[$i] -ArgumentList $scriptBlockParameter | Out-Null
+            Write-Host "Adding job: $($computername[$i])"
+            $i++
+        }
+        if (@($jobs | Where-Object state -eq 'Completed').count -ne 0 )
+        {
+            Get-Job | Receive-Job | Write-Output
+        }
+        Start-Sleep -s 1
     }
-
 }
 
 
@@ -30,7 +38,7 @@ function Start-JobQueue
 $scriptBlockParameter = 
 @(
     $null,  #for computername parameter - populated while adding Job
-    15, #for count parameter
+    3, #for count parameter
     64 #for size parameter
 )
 $scriptBlock =
