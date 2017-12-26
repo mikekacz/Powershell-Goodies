@@ -6,8 +6,8 @@ function Start-JobQueue
         [psobject[]]$scriptBlockParameter,
         [string[]]$computername,
         [int]$MaxThreads = 15,
-        [int]$SleepTimer = 60,
-        [int]$MaxWaitAtEnd = 60
+        [int]$SleepTimer = 1, #in Seconds
+        [int]$MaxRuntime = 60 #in Seconds
         )
 
     #clean jobs
@@ -15,22 +15,33 @@ function Start-JobQueue
 
     $i = 0 #Job index
 
-    while (@(get-job).count -lt $computername.Count -or @(get-job -HasMoreData $true).Count -ne 0) {
+    while ($i -lt $computername.Count -or @(get-job -HasMoreData $true).Count -ne 0 ) { #TODO: what about job that are still running, but no data on them
         $jobs = @(get-job)
         if (@($jobs | Where-Object state -eq 'Running').count -lt $MaxThreads -and $i -lt $computername.Count)
         {
             #add next job
             $scriptBlockParameter[0] = $computername[$i]
             Start-Job -ScriptBlock $scriptBlock -Name $computername[$i] -ArgumentList $scriptBlockParameter | Out-Null
-            Write-Host "Adding job: $($computername[$i])"
+            Write-Host "Adding job: $($computername[$i])" #TODO: move to Write-progress
             $i++
         }
-        if (@($jobs | Where-Object state -eq 'Completed').count -ne 0 )
-        {
-            Get-Job | Receive-Job | Write-Output
-        }
-        Start-Sleep -s 1
+
+        $jobs | Where-Object HasMoreData -eq $true | Receive-Job | Write-Output
+        $jobs | Where-Object {$_.state -eq 'Running' -and $(get-time - $_.PSBeginTime).totalseconds -gt $MaxRuntime } | Stop-Job
+
+        Start-Sleep -s $SleepTimer
     }
+
+    #list failed jobs
+    get-job | Where-Object state -ne "completed" | ForEach-Object
+    {
+        Write-Warning -Message "Job: '$($_.name)' failed with status '$($_.state)'"
+        $message = @{
+            computername = $_.name
+            status = "failed with status '$($_.state)'"}
+        Write-Output $(New-Object psobject -Property $message)
+    }
+    
 }
 
 
