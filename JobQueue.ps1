@@ -26,14 +26,13 @@ function Start-JobQueue {
         }
 
         $jobs | Where-Object HasMoreData -eq $true | Receive-Job | Write-Output
-        $jobs | Where-Object {$_.state -eq 'Running' -and $(get-time - $_.PSBeginTime).totalseconds -gt $MaxRuntime } | Stop-Job
+        $jobs | Where-Object {$_.state -eq 'Running' -and ($(get-Date) - $_.PSBeginTime).totalseconds -gt $MaxRuntime } | Stop-Job 
 
         Start-Sleep -s $SleepTimer
     }
 
     #list failed jobs
-    get-job | Where-Object state -ne "completed" | ForEach-Object
-    {
+    get-job | Where-Object state -ne "completed" | ForEach-Object {
         Write-Warning -Message "Job: '$($_.name)' failed with status '$($_.state)'"
         $message = @{
             computername = $_.name
@@ -58,4 +57,11 @@ $scriptBlock =
     test-connection -ComputerName $computername -Count $count -BufferSize $size | Write-Output 
 }
 
-$computername = @('10.12.10.10', '10.12.10.2', '10.12.10.6', '10.12.10.13')
+$computername = @()
+$list = (1..255)
+$mask = '10.12.10.'
+$list | ForEach-Object {$computername += "$mask$_"}
+
+#$computername = @('10.12.10.10', '10.12.10.2', '10.12.10.6', '10.12.10.13')
+
+Start-JobQueue -scriptBlock $scriptBlock -scriptBlockParameter $scriptBlockParameter -computername $computername
