@@ -27,7 +27,7 @@ function Start-JobQueue {
         $jobs | Where-Object HasMoreData -eq $true | Receive-Job | Write-Output
         $jobs | Where-Object {$_.state -eq 'Running' -and ($(get-Date) - $_.PSBeginTime).totalseconds -gt $MaxRuntime } | Stop-Job 
 
-        Write-progress -activity "JobQueue" -completed $false -status "Total: $($computername.count); Running: $(@($jobs | Where-Object state -eq 'Running').count); Completed: $(@($jobs | Where-Object state -eq 'Completed').count); Stopped: $(@($jobs | Where-Object state -eq 'Stopped').count)"
+        Write-progress -activity "JobQueue" -status "Total: $($computername.count); Running: $(@($jobs | Where-Object state -eq 'Running').count); Completed: $(@($jobs | Where-Object state -eq 'Completed').count); Stopped: $(@($jobs | Where-Object state -eq 'Stopped').count)"
         Start-Sleep -s $SleepTimer
     }
 
