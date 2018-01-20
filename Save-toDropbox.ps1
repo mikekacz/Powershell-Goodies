@@ -1,4 +1,4 @@
-function upload-todropbox
+function Save-toDropbox
 {
 <#
 .SYNOPSIS
@@ -9,7 +9,7 @@ This Powershell script will upload file to DropBox using their REST API with the
 The path of the file to upload.
 .PARAMETER TargetFilePath
 The path of the file on DropBox.
-.ENV PARAMETER DropBoxAccessToken
+.PARAMETER DropBoxAccessToken
 The DropBox access token.
 #>
 
@@ -17,7 +17,9 @@ Param(
     [Parameter(Mandatory=$true)]
     [string]$SourceFilePath,
     [Parameter(Mandatory=$true)]
-    [string]$TargetFilePath
+    [string]$TargetFilePath,
+    [Parameter(Mandatory=$true)]
+    [string]$DropBoxAccessToken
 )
 
 $arg = '{ "path": "' + $TargetFilePath + '", "mode": "add", "autorename": true, "mute": false }'
